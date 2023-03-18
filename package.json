@@ -1,7 +1,7 @@
 {
-  "name": "node-typescript-boilerplate",
+  "name": "victron-mqtt-consumer",
   "version": "0.0.0",
-  "description": "Minimalistic boilerplate to quick-start Node.js development in TypeScript.",
+  "description": "Library to connect to a victron GX Device via MQTT and provide it's states.",
   "type": "module",
   "engines": {
     "node": ">= 18.12 <19"
@@ -33,7 +33,7 @@
     "prettier": "prettier --config .prettierrc --write .",
     "test:watch": "jest --watch"
   },
-  "author": "Jakub Synowiec <jsynowiec@users.noreply.github.com>",
+  "author": "Thiemo Hoffmann <theimo1221@users.noreply.github.com>",
   "license": "Apache-2.0",
   "dependencies": {
     "tslib": "~2.4"
