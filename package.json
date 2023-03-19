@@ -4,7 +4,7 @@
   "description": "Library to connect to a victron GX Device via MQTT and provide it's states.",
   "type": "module",
   "engines": {
-    "node": ">= 18.12 <19"
+    "node": ">= 16.14 <19"
   },
   "devDependencies": {
     "@types/jest": "~29.2",
@@ -23,6 +23,7 @@
   },
   "scripts": {
     "start": "node build/src/main.js",
+    "connection-test": "tsc && node build/__tests__/connection.test.js",
     "clean": "rimraf coverage build tmp",
     "prebuild": "npm run lint",
     "build": "tsc -p tsconfig.json",
@@ -36,7 +37,8 @@
   "author": "Thiemo Hoffmann <theimo1221@users.noreply.github.com>",
   "license": "Apache-2.0",
   "dependencies": {
-    "tslib": "~2.4"
+    "tslib": "~2.4",
+    "mqtt": "4.3.7"
   },
   "volta": {
     "node": "18.12.1"
