@@ -8,7 +8,7 @@
 
 ## License
 
-Licensed under the APLv2. See the [LICENSE](https://github.com/jsynowiec/node-typescript-boilerplate/blob/main/LICENSE) file for details.
+Licensed under the APLv2. See the [LICENSE](https://github.com/theimo1221/victron-mqtt-consumer/blob/main/LICENSE) file for details.
 
 [ts-badge]: https://img.shields.io/badge/TypeScript-4.9-blue.svg
 [nodejs-badge]: https://img.shields.io/badge/Node.js->=%2018.12-blue.svg
