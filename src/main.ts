@@ -1,94 +1,99 @@
-import { VictronMqttConnectionOptions } from "./models/VictronMqttConnectionOptions.js"
-import { connect, MqttClient } from "mqtt"
-import { IPublishPacket } from "mqtt-packet"
-import { RegexConsts } from "./RegexConsts.js"
-import { VictronDeviceData } from "./models/VictronDeviceData.js"
+import { connect, IPublishPacket, MqttClient } from 'mqtt';
+import { VictronDeviceData, VictronMqttConnectionOptions } from './models';
+import { RegexConsts } from './RegexConsts';
 
 export class VictronMqttConsumer {
-  private client: MqttClient
-  private keepAliveInterval: NodeJS.Timer
-  private initialized = false
+  private client: MqttClient;
+  private keepAliveInterval: NodeJS.Timer | null = null;
+  private initialized = false;
 
-  private serialNumber = ""
-  private readonly _data = new VictronDeviceData()
-  public get data(): VictronDeviceData {
-    return this._data
-  }
-
-  public get connected(): boolean {
-    return this.client.connected
-  }
+  private serialNumber = '';
+  private readonly _data = new VictronDeviceData();
 
   constructor(opts: VictronMqttConnectionOptions) {
     // Validate Options
     if (!VictronMqttConnectionOptions.validate(opts)) {
-      console.warn('Connection failed, due to invalid Options.')
-      return
+      throw new Error('Connection failed, due to invalid Options.');
     }
     // Connect to Device
     this.client = connect({
-      host: opts.ip,
+      host: opts.ip ?? undefined,
       port: opts.port,
-      protocol: "mqtt"
-    })
+      protocol: 'mqtt',
+    });
 
-    this.client.on("connect", () => {
+    this.client.on('connect', () => {
       if (!this.initialized) {
-        this.initialize()
+        this.initialize();
       }
-    })
+    });
 
     // Add Message Listener
-    this.client.on("message", this.onMessage.bind(this))
+    this.client.on('message', this.onMessage.bind(this));
+  }
+
+  public get data(): VictronDeviceData {
+    return this._data;
+  }
+
+  public get connected(): boolean {
+    return this.client.connected;
   }
 
   public disconnect(): void {
-    clearInterval(this.keepAliveInterval)
-    this.client.end()
+    if (this.keepAliveInterval !== null) {
+      clearInterval(this.keepAliveInterval);
+      this.keepAliveInterval = null;
+    }
+    this.client.end();
   }
 
   private onMessage(topic: string, _: Buffer, packet: IPublishPacket): void {
     if (RegexConsts.SERIAL_NUMBER.test(topic)) {
-      this.processSerialNumber(topic)
-      return
+      this.processSerialNumber(topic);
+      return;
     }
-    const filteredTopic = topic.replace(`N/${this.serialNumber}/`, "")
-    this.data.onNewData(filteredTopic, packet.payload.toString())
+    const filteredTopic = topic.replace(`N/${this.serialNumber}/`, '');
+    this.data.onNewData(filteredTopic, packet.payload.toString());
   }
 
   private sendKeepAlive(): void {
     if (!this.serialNumber) {
-      return
+      return;
     }
     this.client.publish(
       `R/${this.serialNumber}/keepalive`,
-      "",
+      '',
       {
-        qos: 0
+        qos: 0,
       },
       (error) => {
         if (error) {
-          console.warn("Keepalive resulted in error:", error)
+          console.warn('Keepalive resulted in error:', error);
         }
-      })
+      },
+    );
   }
 
   private initialize(): void {
-    this.initialized = true
-    console.log("Client connected starting subscription now")
+    this.initialized = true;
+    console.log('Client connected starting subscription now');
     // Start subscription
-    this.client.subscribe("#", (err) => {
+    this.client.subscribe('#', (err) => {
       if (err) {
-        console.log("Subscription resulted in error:", err)
+        console.log('Subscription resulted in error:', err);
       }
-    })
+    });
 
     // Start Keepalive
-    this.keepAliveInterval = setInterval(this.sendKeepAlive.bind(this), 9000)
+    this.keepAliveInterval = setInterval(this.sendKeepAlive.bind(this), 9000);
   }
 
   private processSerialNumber(topic: string): void {
-    const groups = RegexConsts.SERIAL_NUMBER.exec(topic)
-    this.serialNumber = groups[1]
+    const groups = RegexConsts.SERIAL_NUMBER.exec(topic);
+    const secondGroupd = groups?.[1];
+    if (secondGroupd) {
+      this.serialNumber = secondGroupd;
+    }
   }
 }

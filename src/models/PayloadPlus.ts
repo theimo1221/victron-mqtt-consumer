@@ -1,12 +1,11 @@
 export class PayloadPlus {
-  public payload: string
+  public payload: string;
 
   constructor(data: string) {
-    this.payload = data
+    this.payload = data;
   }
 
   public extractNumberValue(): number {
-    return JSON.parse(this.payload).value
+    return JSON.parse(this.payload).value;
   }
-
 }
