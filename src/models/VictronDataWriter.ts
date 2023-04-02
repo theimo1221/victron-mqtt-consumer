@@ -23,7 +23,7 @@ export class VictronDataWriter {
 
   public setGridSetPoint(value: number): void {
     this.client.publish(
-      `${this.writeMqttBasePath}/${VictronMqttTopics.AcGridSetpoint}`,
+      `${this.writeMqttBasePath}/${VictronMqttTopics.AcGridSetPoint}`,
       this.numberMessage(value),
       this.defaultPublishOpts,
       this.onPublishError('setGridSetPoint'),
