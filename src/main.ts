@@ -48,6 +48,25 @@ export class VictronMqttConsumer {
     this.client.end();
   }
 
+  /**
+   * Sets the ESS-Grid Set Point
+   * @param {number} value Positive Value = from Grid, Negative Value = feeding into Grid.
+   */
+  public setGridSetPoint(value: number): void {
+    this.client.publish(
+      `W/${this.serialNumber}/settings/0/Settings/CGwacs/AcPowerSetPoint`,
+      `{"value": ${value}}`,
+      {
+        qos: 0,
+      },
+      (error) => {
+        if (error) {
+          console.warn('PublishAdd resulted in error:', error);
+        }
+      },
+    );
+  }
+
   private onMessage(topic: string, _: Buffer, packet: IPublishPacket): void {
     if (RegexConsts.SERIAL_NUMBER.test(topic)) {
       this.processSerialNumber(topic);
