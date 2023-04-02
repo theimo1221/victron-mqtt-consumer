@@ -1,6 +1,7 @@
 import { connect, IPublishPacket, MqttClient } from 'mqtt';
 import { VictronDeviceData, VictronMqttConnectionOptions } from './models';
 import { RegexConsts } from './RegexConsts';
+import { VictronDataWriter } from './models/VictronDataWriter';
 
 export class VictronMqttConsumer {
   private client: MqttClient;
@@ -9,6 +10,13 @@ export class VictronMqttConsumer {
 
   private serialNumber = '';
   private readonly _data = new VictronDeviceData();
+  private _dataWriter?: VictronDataWriter;
+  private get dataWriter(): VictronDataWriter {
+    if (!this._dataWriter) {
+      throw new Error('No DataWriter available, please connect first');
+    }
+    return this._dataWriter;
+  }
 
   constructor(opts: VictronMqttConnectionOptions) {
     // Validate Options
@@ -53,18 +61,7 @@ export class VictronMqttConsumer {
    * @param {number} value Positive Value = from Grid, Negative Value = feeding into Grid.
    */
   public setGridSetPoint(value: number): void {
-    this.client.publish(
-      `W/${this.serialNumber}/settings/0/Settings/CGwacs/AcPowerSetPoint`,
-      `{"value": ${value}}`,
-      {
-        qos: 0,
-      },
-      (error) => {
-        if (error) {
-          console.warn('PublishAdd resulted in error:', error);
-        }
-      },
-    );
+    this.dataWriter.setGridSetPoint(value);
   }
 
   private onMessage(topic: string, _: Buffer, packet: IPublishPacket): void {
@@ -77,21 +74,7 @@ export class VictronMqttConsumer {
   }
 
   private sendKeepAlive(): void {
-    if (!this.serialNumber) {
-      return;
-    }
-    this.client.publish(
-      `R/${this.serialNumber}/keepalive`,
-      '',
-      {
-        qos: 0,
-      },
-      (error) => {
-        if (error) {
-          console.warn('Keepalive resulted in error:', error);
-        }
-      },
-    );
+    this.dataWriter.sendKeepAlive();
   }
 
   private initialize(): void {
@@ -113,6 +96,7 @@ export class VictronMqttConsumer {
     const secondGroupd = groups?.[1];
     if (secondGroupd) {
       this.serialNumber = secondGroupd;
+      this._dataWriter = new VictronDataWriter(this.client, this.serialNumber);
     }
   }
 }
