@@ -6,5 +6,6 @@
     "__test__/**/*.test.ts",
     ".eslintrc.js",
     "jest.config.js"
-  ]
+  ],
+  "exclude": ["build", "node_modules","**/*.d.ts"]
 }

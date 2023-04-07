@@ -4,6 +4,19 @@
 [![Node.js version][nodejs-badge]][nodejs]
 [![APLv2][license-badge]][license]
 
+## Description
+This is a simple Node.js application that 
+1. consumes MQTT messages from Victron devices
+2. Holds collected data in memory (with typed accessors)
+3. Offers some basic controlling capabilities (e.g. to set gridPoint)
+4. (if configured) publishes them to InfluxDB.
+
+## Storing in InfluxDB
+The application can be configured to store the data in InfluxDB.
+This is done by passing the correct options, during creation of the consumer.
+The database will be created if it does not exist.
+
+The data structure is parallel to the Implementation of https://github.com/victronenergy/venus-docker-grafana-images to allow usage of the same Grafana dashboards. Thanks guys!
 
 
 ## License

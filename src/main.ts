@@ -1,16 +1,17 @@
 import { connect, IPublishPacket, MqttClient } from 'mqtt';
-import { VictronDeviceData, VictronMqttConnectionOptions } from './models';
+import { VictronDeviceData, VictronDataWriter, VictronMqttConnectionOptions, VictronInfluxClient } from './models';
 import { RegexConsts } from './RegexConsts';
-import { VictronDataWriter } from './models/VictronDataWriter';
 
 export class VictronMqttConsumer {
-  private client: MqttClient;
+  private readonly client: MqttClient;
   private keepAliveInterval: NodeJS.Timer | null = null;
   private initialized = false;
 
   private serialNumber = '';
   private readonly _data = new VictronDeviceData();
   private _dataWriter?: VictronDataWriter;
+  private readonly influxClient: VictronInfluxClient | null = null;
+
   private get dataWriter(): VictronDataWriter {
     if (!this._dataWriter) {
       throw new Error('No DataWriter available, please connect first');
@@ -38,6 +39,9 @@ export class VictronMqttConsumer {
 
     // Add Message Listener
     this.client.on('message', this.onMessage.bind(this));
+    if (opts.influxDb) {
+      this.influxClient = new VictronInfluxClient(opts.influxDb);
+    }
   }
 
   public get data(): VictronDeviceData {
@@ -65,6 +69,7 @@ export class VictronMqttConsumer {
   }
 
   private onMessage(topic: string, _: Buffer, packet: IPublishPacket): void {
+    this.influxClient?.write(topic, packet.payload.toString());
     if (RegexConsts.SERIAL_NUMBER.test(topic)) {
       this.processSerialNumber(topic);
       return;
@@ -84,6 +89,7 @@ export class VictronMqttConsumer {
     this.client.subscribe('#', (err) => {
       if (err) {
         console.log('Subscription resulted in error:', err);
+        return;
       }
     });
 
