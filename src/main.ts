@@ -69,13 +69,12 @@ export class VictronMqttConsumer {
   }
 
   private onMessage(topic: string, _: Buffer, packet: IPublishPacket): void {
-    this.influxClient?.write(topic, packet.payload.toString());
-    if (RegexConsts.SERIAL_NUMBER.test(topic)) {
-      this.processSerialNumber(topic);
-      return;
+    try {
+      // If a message can't be processed, it will be ignored.
+      this.processMessage(topic, packet);
+    } catch (e) {
+      // console.log('Error while processing message', e);
     }
-    const filteredTopic = topic.replace(`N/${this.serialNumber}/`, '');
-    this.data.onNewData(filteredTopic, packet.payload.toString());
   }
 
   private sendKeepAlive(): void {
@@ -104,5 +103,15 @@ export class VictronMqttConsumer {
       this.serialNumber = secondGroupd;
       this._dataWriter = new VictronDataWriter(this.client, this.serialNumber);
     }
+  }
+
+  private processMessage(topic: string, packet: IPublishPacket): void {
+    this.influxClient?.write(topic, packet.payload.toString());
+    if (RegexConsts.SERIAL_NUMBER.test(topic)) {
+      this.processSerialNumber(topic);
+      return;
+    }
+    const filteredTopic = topic.replace(`N/${this.serialNumber}/`, '');
+    this.data.onNewData(filteredTopic, packet.payload.toString());
   }
 }

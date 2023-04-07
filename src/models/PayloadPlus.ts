@@ -6,6 +6,7 @@ export class PayloadPlus {
   }
 
   public extractNumberValue(): number {
+    // This can occasionally throw an exception, in case of a bad payload.
     return JSON.parse(this.payload).value;
   }
 }
