@@ -3,7 +3,7 @@ import { VictronDeviceData, VictronDataWriter, VictronMqttConnectionOptions, Vic
 import { RegexConsts } from './RegexConsts';
 
 export class VictronMqttConsumer {
-  private readonly client: MqttClient;
+  private client: MqttClient | null = null;
   private keepAliveInterval: NodeJS.Timer | null = null;
   private initialized = false;
 
@@ -11,6 +11,7 @@ export class VictronMqttConsumer {
   private readonly _data = new VictronDeviceData();
   private _dataWriter?: VictronDataWriter;
   private readonly influxClient: VictronInfluxClient | null = null;
+  private _opts: VictronMqttConnectionOptions;
 
   private get dataWriter(): VictronDataWriter {
     if (!this._dataWriter) {
@@ -19,11 +20,21 @@ export class VictronMqttConsumer {
     return this._dataWriter;
   }
 
-  constructor(opts: VictronMqttConnectionOptions) {
+  constructor(opts: VictronMqttConnectionOptions, refreshAllIntervalSeconds = 1800) {
+    setInterval(this.refreshAll.bind(this), refreshAllIntervalSeconds * 1000);
     // Validate Options
     if (!VictronMqttConnectionOptions.validate(opts)) {
       throw new Error('Connection failed, due to invalid Options.');
     }
+    this._opts = opts;
+    this.reConnectMqttClient(opts);
+
+    if (opts.influxDb) {
+      this.influxClient = new VictronInfluxClient(opts.influxDb);
+    }
+  }
+
+  private reConnectMqttClient(opts: VictronMqttConnectionOptions): void {
     // Connect to Device
     this.client = connect({
       host: opts.ip ?? undefined,
@@ -32,6 +43,7 @@ export class VictronMqttConsumer {
     });
 
     this.client.on('connect', () => {
+      this.subscribe();
       if (!this.initialized) {
         this.initialize();
       }
@@ -39,9 +51,6 @@ export class VictronMqttConsumer {
 
     // Add Message Listener
     this.client.on('message', this.onMessage.bind(this));
-    if (opts.influxDb) {
-      this.influxClient = new VictronInfluxClient(opts.influxDb);
-    }
   }
 
   public get data(): VictronDeviceData {
@@ -49,7 +58,7 @@ export class VictronMqttConsumer {
   }
 
   public get connected(): boolean {
-    return this.client.connected;
+    return this.client?.connected === true;
   }
 
   public disconnect(): void {
@@ -57,7 +66,7 @@ export class VictronMqttConsumer {
       clearInterval(this.keepAliveInterval);
       this.keepAliveInterval = null;
     }
-    this.client.end();
+    this.client?.end();
   }
 
   /**
@@ -83,14 +92,6 @@ export class VictronMqttConsumer {
 
   private initialize(): void {
     this.initialized = true;
-    console.log('Client connected starting subscription now');
-    // Start subscription
-    this.client.subscribe('#', (err) => {
-      if (err) {
-        console.log('Subscription resulted in error:', err);
-        return;
-      }
-    });
 
     // Start Keepalive
     this.keepAliveInterval = setInterval(this.sendKeepAlive.bind(this), 9000);
@@ -99,7 +100,7 @@ export class VictronMqttConsumer {
   private processSerialNumber(topic: string): void {
     const groups = RegexConsts.SERIAL_NUMBER.exec(topic);
     const secondGroupd = groups?.[1];
-    if (secondGroupd) {
+    if (secondGroupd && this.client) {
       this.serialNumber = secondGroupd;
       this._dataWriter = new VictronDataWriter(this.client, this.serialNumber);
     }
@@ -113,5 +114,20 @@ export class VictronMqttConsumer {
     }
     const filteredTopic = topic.replace(`N/${this.serialNumber}/`, '');
     this.data.onNewData(filteredTopic, packet.payload.toString());
+  }
+
+  private refreshAll(): void {
+    this.reConnectMqttClient(this._opts);
+  }
+
+  private subscribe(): void {
+    console.log('Client connected starting subscription now');
+    // Start subscription
+    this.client?.subscribe('#', (err) => {
+      if (err) {
+        console.log('Subscription resulted in error:', err);
+        return;
+      }
+    });
   }
 }
