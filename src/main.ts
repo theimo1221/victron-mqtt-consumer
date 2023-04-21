@@ -43,6 +43,7 @@ export class VictronMqttConsumer {
     });
 
     this.client.on('connect', () => {
+      console.log('MQTT Client (re)connected');
       this.subscribe();
       if (!this.initialized) {
         this.initialize();
@@ -121,13 +122,15 @@ export class VictronMqttConsumer {
   }
 
   private subscribe(): void {
-    console.log('Client connected starting subscription now');
+    console.log('Client connected stop ongoing subscription, and starting new subscription.');
     // Start subscription
-    this.client?.subscribe('#', (err) => {
-      if (err) {
-        console.log('Subscription resulted in error:', err);
-        return;
-      }
+    this.client?.unsubscribe('#', () => {
+      this.client?.subscribe('#', (err) => {
+        if (err) {
+          console.log('Subscription resulted in error:', err);
+          return;
+        }
+      });
     });
   }
 }

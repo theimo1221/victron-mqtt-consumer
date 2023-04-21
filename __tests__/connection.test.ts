@@ -11,6 +11,7 @@ class ConnectionTest {
 
     await setTimeout(10000);
     console.log('Consumer connected: ', consumer.connected);
+    consumer.setGridSetPoint(0);
 
     await setTimeout(5000);
     console.log('Energy forward, reverse', consumer.data.grid.energyForward, consumer.data.grid.energyReverse);
