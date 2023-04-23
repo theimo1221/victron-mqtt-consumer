@@ -22,6 +22,9 @@ export class VictronInfluxClient {
       database: opts.database,
       username: opts.username,
       password: opts.password,
+      pool: {
+        maxRetries: 5,
+      },
     });
     this.batchWriteInterval = (opts.batchIntervalSeconds ?? 10) * 1000;
 

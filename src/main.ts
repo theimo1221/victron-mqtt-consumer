@@ -27,7 +27,7 @@ export class VictronMqttConsumer {
       throw new Error('Connection failed, due to invalid Options.');
     }
     this._opts = opts;
-    this.reConnectMqttClient(opts);
+    this.refreshAll();
 
     if (opts.influxDb) {
       this.influxClient = new VictronInfluxClient(opts.influxDb);
@@ -118,7 +118,11 @@ export class VictronMqttConsumer {
   }
 
   private refreshAll(): void {
-    this.reConnectMqttClient(this._opts);
+    try {
+      this.reConnectMqttClient(this._opts);
+    } catch (e) {
+      console.error('Failed to reconnect MQTT Client:', e);
+    }
   }
 
   private subscribe(): void {
