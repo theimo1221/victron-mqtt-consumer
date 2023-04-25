@@ -1,5 +1,5 @@
 import { connect, IPublishPacket, MqttClient } from 'mqtt';
-import { VictronDeviceData, VictronDataWriter, VictronMqttConnectionOptions, VictronInfluxClient } from './models';
+import { VictronDataWriter, VictronDeviceData, VictronInfluxClient, VictronMqttConnectionOptions } from './models';
 import { RegexConsts } from './RegexConsts';
 
 export class VictronMqttConsumer {
@@ -12,6 +12,7 @@ export class VictronMqttConsumer {
   private _dataWriter?: VictronDataWriter;
   private readonly influxClient: VictronInfluxClient | null = null;
   private _opts: VictronMqttConnectionOptions;
+  private _queudSubscribe: boolean = false;
 
   private get dataWriter(): VictronDataWriter {
     if (!this._dataWriter) {
@@ -42,13 +43,14 @@ export class VictronMqttConsumer {
       protocol: 'mqtt',
     });
 
-    this.client.on('connect', () => {
-      console.log('MQTT Client (re)connected');
-      this.subscribe();
-      if (!this.initialized) {
-        this.initialize();
-      }
+    this.client.on('error', (error: Error) => {
+      console.error('MQTT Client onError', error);
     });
+
+    this.client.on('disconnect', () => {
+      console.warn('MQTT Client onDisconnect');
+    });
+    this.client.on('connect', this.onMqttConnect.bind(this));
 
     // Add Message Listener
     this.client.on('message', this.onMessage.bind(this));
@@ -88,6 +90,9 @@ export class VictronMqttConsumer {
   }
 
   private sendKeepAlive(): void {
+    if (this._queudSubscribe || !this.client?.connected || !this.initialized) {
+      return;
+    }
     this.dataWriter.sendKeepAlive();
   }
 
@@ -136,5 +141,29 @@ export class VictronMqttConsumer {
         }
       });
     });
+  }
+
+  private onMqttConnect(): void {
+    if (!this.client) {
+      throw new Error('Client not initialized');
+    }
+    if (!this.initialized) {
+      this.subscribe();
+      this.initialize();
+    } else if (this._queudSubscribe) {
+      return;
+    }
+    // Unfortunately the MQTT Client behaves weird on disconnects, resulting in akward reconnect loops
+    // so to prevent this, we give the whole system some time before resubscribing.
+    this._queudSubscribe = true;
+    setTimeout(() => {
+      try {
+        this.subscribe();
+      } catch (e) {
+        console.error('Failed to subscribe to topics', e);
+      } finally {
+        this._queudSubscribe = false;
+      }
+    }, 10000);
   }
 }
