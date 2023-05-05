@@ -1,6 +1,6 @@
 {
   "name": "victron-mqtt-consumer",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "Library to connect to a victron GX Device via MQTT and provide it's states.",
   "files": [
     "build/**/*"

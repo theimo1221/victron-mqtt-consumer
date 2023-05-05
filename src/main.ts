@@ -36,17 +36,17 @@ export class VictronMqttConsumer {
   }
 
   private reConnectMqttClient(opts: VictronMqttConnectionOptions): void {
-    if (this.client?.connected) {
+    if (this.client !== null) {
       // In case of the client being previously connected, we need to disconnect first
-      this.client.end(true).reconnect();
-    } else {
-      // Connect to Device
-      this.client = connect({
-        host: opts.ip ?? undefined,
-        port: opts.port,
-        protocol: 'mqtt',
-      });
+      this.client.end(true);
     }
+
+    // Connect to Device
+    this.client = connect({
+      host: opts.ip ?? undefined,
+      port: opts.port,
+      protocol: 'mqtt',
+    });
 
     this.client.on('error', (error: Error) => {
       console.error('MQTT Client onError', error);
