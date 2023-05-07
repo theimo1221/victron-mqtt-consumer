@@ -28,14 +28,19 @@ export class VictronInfluxClient {
     });
     this.batchWriteInterval = (opts.batchIntervalSeconds ?? 10) * 1000;
 
-    this.client.getDatabaseNames().then((names: string[]): void => {
-      if (!names.includes(opts.database)) {
-        console.log(`Creating database ${opts.database}`);
-        this.client.createDatabase(opts.database).then(this.setRetention.bind(this));
-      } else {
-        this.setRetention();
-      }
-    });
+    this.client
+      .getDatabaseNames()
+      .then((names: string[]): void => {
+        if (!names.includes(opts.database)) {
+          console.log(`Creating database ${opts.database}`);
+          this.client.createDatabase(opts.database).then(this.setRetention.bind(this));
+        } else {
+          this.setRetention();
+        }
+      })
+      .catch((error: any): void => {
+        console.error(`Error getting database names: ${error}`);
+      });
   }
 
   private setRetention(): void {
@@ -45,7 +50,9 @@ export class VictronInfluxClient {
       isDefault: true,
     };
     this.client.createRetentionPolicy('victronMqtt', retentionOpts).catch((_error: any): void => {
-      this.client.alterRetentionPolicy('victronMqtt', retentionOpts);
+      this.client.alterRetentionPolicy('victronMqtt', retentionOpts).catch((error: any): void => {
+        console.error(`Error setting retention policy: ${error}`);
+      });
     });
   }
 
