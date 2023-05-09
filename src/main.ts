@@ -11,7 +11,7 @@ export class VictronMqttConsumer {
   private readonly _data = new VictronDeviceData();
   private _dataWriter?: VictronDataWriter;
   private readonly influxClient: VictronInfluxClient | null = null;
-  private _opts: VictronMqttConnectionOptions;
+  private readonly _opts: VictronMqttConnectionOptions;
   private _queudSubscribe: boolean = false;
 
   private get dataWriter(): VictronDataWriter {
@@ -38,9 +38,11 @@ export class VictronMqttConsumer {
   private reConnectMqttClient(opts: VictronMqttConnectionOptions): void {
     if (this.client !== null) {
       // In case of the client being previously connected, we need to disconnect first
+      this.log('reConnectMqttClient: Disconnecting previous client');
       this.client.end(true);
     }
 
+    this.log('reConnectMqttClient: Establishing new connection');
     // Connect to Device
     this.client = connect({
       host: opts.ip ?? undefined,
@@ -48,6 +50,7 @@ export class VictronMqttConsumer {
       protocol: 'mqtt',
     });
 
+    this.log('reConnectMqttClient: Binding events');
     this.client.on('error', (error: Error) => {
       console.error('MQTT Client onError', error);
     });
@@ -70,6 +73,7 @@ export class VictronMqttConsumer {
   }
 
   public disconnect(): void {
+    this.log('disconnect');
     if (this.keepAliveInterval !== null) {
       clearInterval(this.keepAliveInterval);
       this.keepAliveInterval = null;
@@ -98,14 +102,22 @@ export class VictronMqttConsumer {
     if (this._queudSubscribe || !this.client?.connected || !this.initialized) {
       return;
     }
+    this.log('sendKeepAlive');
     this.dataWriter.sendKeepAlive();
   }
 
   private initialize(): void {
+    this.log('initialize');
     this.initialized = true;
 
     // Start Keepalive
     this.keepAliveInterval = setInterval(this.sendKeepAlive.bind(this), 9000);
+  }
+
+  private log(message: string, force: boolean = false, ...args: any[]): void {
+    if (this._opts.debug || force) {
+      console.log(`VictronMQTT: ${message}`, ...args);
+    }
   }
 
   private processSerialNumber(topic: string): void {
@@ -128,6 +140,7 @@ export class VictronMqttConsumer {
   }
 
   private refreshAll(): void {
+    this.log('refreshAll');
     try {
       this.reConnectMqttClient(this._opts);
     } catch (e) {
@@ -136,12 +149,14 @@ export class VictronMqttConsumer {
   }
 
   private subscribe(): void {
-    console.log('Client connected stop ongoing subscription, and starting new subscription.');
+    this.log('Client connected stop ongoing subscription, and starting new subscription.', true);
     // Start subscription
     this.client?.unsubscribe('#', () => {
+      this.log('Unsubscribed from all topics');
       this.client?.subscribe('#', (err) => {
+        this.log('Subscribed to all topics');
         if (err) {
-          console.log('Subscription resulted in error:', err);
+          this.log('Subscription resulted in error:', true, err);
           return;
         }
       });
@@ -149,6 +164,7 @@ export class VictronMqttConsumer {
   }
 
   private onMqttConnect(): void {
+    this.log('onMqttConnect');
     if (!this.client) {
       throw new Error('Client not initialized');
     }

@@ -4,6 +4,7 @@ export class VictronMqttConnectionOptions {
   public ip: string | null = null;
   public port = 1883;
   public influxDb: InfluxDbConnectionOptions | null = null;
+  public debug: boolean = false;
 
   public static validate(opts: VictronMqttConnectionOptions): boolean {
     if (!opts.ip || opts.ip.length < 4) {
