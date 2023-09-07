@@ -9,3 +9,4 @@ export * from './VictronMqttConnectionOptions';
 export * from './VictronPvInverterData';
 export * from './VictronMqttTopicConstants';
 export * from './VictronInfluxDataPoint';
+export * from './VictronSystemData';
