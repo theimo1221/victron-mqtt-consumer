@@ -8,7 +8,7 @@
   "main": "build/index.js",
   "types": "build/index.d.ts",
   "engines": {
-    "node": ">= 16.14 <19"
+    "node": ">= 18"
   },
   "dependencies": {
     "mqtt": "5.7.2",
