@@ -4,7 +4,7 @@ import { RegexConsts } from './RegexConsts';
 
 export class VictronMqttConsumer {
   private client: MqttClient | null = null;
-  private keepAliveInterval: NodeJS.Timer | null = null;
+  private keepAliveInterval: NodeJS.Timeout | null = null;
   private initialized = false;
 
   private serialNumber = '';
